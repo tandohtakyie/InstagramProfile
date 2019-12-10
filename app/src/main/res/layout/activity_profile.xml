@@ -10,10 +10,7 @@
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:background="@color/whitish"
-        android:elevation="4dp"
+        style="@style/toolbar"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
@@ -24,7 +21,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
-                android:text="tandohtakyie!"
+                android:text="mrbean"
                 android:textSize="19sp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintLeft_toLeftOf="parent"
@@ -51,54 +48,68 @@
         android:layout_marginTop="15dp"
         android:layout_marginBottom="15dp"
         android:src="@drawable/bean"
-        app:layout_constraintBottom_toTopOf="@+id/button"
+        app:layout_constraintBottom_toTopOf="@+id/edit_profile_btn"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/toolbar" />
 
     <TextView
         android:id="@+id/post_count_text"
         style="@style/profile_text"
+        android:layout_marginStart="40dp"
+        android:layout_marginTop="27dp"
+        android:layout_marginEnd="70dp"
         android:text="50"
-        tools:layout_editor_absoluteX="138dp"
-        tools:layout_editor_absoluteY="77dp" />
+        app:layout_constraintEnd_toStartOf="@+id/followers_count_text"
+        app:layout_constraintStart_toEndOf="@+id/profile_image"
+        app:layout_constraintTop_toBottomOf="@+id/toolbar" />
 
     <TextView
         android:id="@+id/post_text"
         style="@style/profile_text_count"
+        android:layout_marginStart="25dp"
+        android:layout_marginTop="14dp"
         android:text="Posts"
-        tools:layout_editor_absoluteX="138dp"
-        tools:layout_editor_absoluteY="110dp" />
+        app:layout_constraintStart_toEndOf="@+id/profile_image"
+        app:layout_constraintTop_toBottomOf="@+id/post_count_text" />
 
     <TextView
         android:id="@+id/followers_count_text"
         style="@style/profile_text"
+        android:layout_marginTop="27dp"
+        android:layout_marginEnd="60dp"
         android:text="100"
-        tools:layout_editor_absoluteX="227dp"
-        tools:layout_editor_absoluteY="77dp" />
+        app:layout_constraintEnd_toStartOf="@+id/following_count_text"
+        app:layout_constraintTop_toBottomOf="@+id/toolbar" />
 
     <TextView
         android:id="@+id/followers_text"
         style="@style/profile_text_count"
+        android:layout_marginStart="54dp"
+        android:layout_marginTop="13dp"
         android:text="Followers"
-        tools:layout_editor_absoluteX="229dp"
-        tools:layout_editor_absoluteY="109dp" />
+        app:layout_constraintStart_toEndOf="@+id/post_text"
+        app:layout_constraintTop_toBottomOf="@+id/followers_count_text" />
 
     <TextView
         android:id="@+id/following_count_text"
         style="@style/profile_text"
+        android:layout_marginTop="25dp"
+        android:layout_marginEnd="47dp"
         android:text="168"
-        tools:layout_editor_absoluteX="320dp"
-        tools:layout_editor_absoluteY="75dp" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/toolbar" />
 
     <TextView
         android:id="@+id/following_text"
         style="@style/profile_text_count"
+        android:layout_marginTop="14dp"
+        android:layout_marginEnd="27dp"
         android:text="Following"
-        tools:layout_editor_absoluteX="322dp"
-        tools:layout_editor_absoluteY="108dp" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/following_count_text" />
 
     <Button
-        android:id="@+id/button"
+        android:id="@+id/edit_profile_btn"
         android:layout_width="match_parent"
         android:layout_height="30dp"
         android:layout_marginStart="15dp"
@@ -113,20 +124,5 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/profile_image" />
 
-
-
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottom_navigation_view"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:background="@color/whitish"
-        android:elevation="4dp"
-        app:itemIconSize="30dp"
-        app:itemIconTint="@color/black"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:menu="@menu/bottom_navigation_menu" />
-
-
-
+    <include layout="@layout/bottom_navigation_view" />
 </androidx.constraintlayout.widget.ConstraintLayout>

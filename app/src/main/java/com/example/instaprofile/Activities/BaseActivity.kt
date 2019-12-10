@@ -4,7 +4,7 @@ import android.content.Intent
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.example.instaprofile.R
-import kotlinx.android.synthetic.main.activity_profile.*
+import kotlinx.android.synthetic.main.bottom_navigation_view.*
 
 abstract class BaseActivity(private val navNumber: Int) : AppCompatActivity(){
     private val TAG = "BaseActivity"
