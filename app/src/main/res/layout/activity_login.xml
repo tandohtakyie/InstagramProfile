@@ -58,6 +58,7 @@
         android:background="@drawable/login_btn_bg" />
 
     <TextView
+        android:id="@+id/create_account_text"
         android:layout_width="match_parent"
         android:layout_height="@dimen/toolbar_height"
         app:layout_constraintBottom_toBottomOf="parent"
