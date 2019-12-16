@@ -40,7 +40,7 @@ class LoginActivity : AppCompatActivity(), TextWatcher, View.OnClickListener {
                 }
             }
         } else {
-            Toast.makeText(this, "Please enter email and password", Toast.LENGTH_SHORT).show()
+            showToast("Please enter email and password")
         }
     }
 
