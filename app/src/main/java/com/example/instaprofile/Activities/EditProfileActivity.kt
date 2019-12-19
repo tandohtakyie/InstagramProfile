@@ -46,7 +46,7 @@ class EditProfileActivity : AppCompatActivity(), PasswordDialog.Listener {
 
         close_image.setOnClickListener { finish() }
         save_image.setOnClickListener { updateProfile() }
-        change_photo_text.setOnClickListener{takeCameraPicture()}
+        change_photo_text.setOnClickListener { takeCameraPicture() }
 
         mAuth = FirebaseAuth.getInstance()
         mDatabase = FirebaseDatabase.getInstance().reference
@@ -67,16 +67,17 @@ class EditProfileActivity : AppCompatActivity(), PasswordDialog.Listener {
     }
 
     private fun takeCameraPicture() {
-        val intent= Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        if(intent.resolveActivity(packageManager) != null){
+        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        if (intent.resolveActivity(packageManager) != null) {
             val imageFile = createImageFile()
-            mImageUrl = FileProvider.getUriForFile(this,"com.example.instaprofile.fileprovider", imageFile)
+            mImageUrl =
+                FileProvider.getUriForFile(this, "com.example.instaprofile.fileprovider", imageFile)
             intent.putExtra(MediaStore.EXTRA_OUTPUT, mImageUrl)
             startActivityForResult(intent, TAKE_PICTURE_REQUEST_CODE)
         }
     }
 
-    private fun createImageFile(): File{
+    private fun createImageFile(): File {
         val storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES)
         return File.createTempFile(
             "JPEG_${simpleDateFormat.format(Date())}_",
@@ -87,18 +88,22 @@ class EditProfileActivity : AppCompatActivity(), PasswordDialog.Listener {
 
     @SuppressLint("MissingSuperCall")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if (requestCode == TAKE_PICTURE_REQUEST_CODE && resultCode == RESULT_OK){
+        if (requestCode == TAKE_PICTURE_REQUEST_CODE && resultCode == RESULT_OK) {
             val uid = mAuth.currentUser!!.uid
-            mStorage.child("users/$uid/photo").putFile(mImageUrl).addOnCompleteListener{
-                if(it.isSuccessful){
-                    mDatabase.child("users/$uid/photo").setValue(it.result.toString()).addOnCompleteListener{
-                        if (it.isSuccessful){
-                            Log.d(TAG, "onActivityResult: photo saved successfully")
-                        }else{
-                            showToast(it.exception!!.message!!)
-                        }
+            mStorage.child("users/$uid/photo").putFile(mImageUrl).addOnCompleteListener {
+                if (it.isSuccessful) {
+                    val downloadTask = it.result!!.metadata!!.reference!!.downloadUrl
+                    downloadTask.addOnSuccessListener { uri ->
+                        mDatabase.child("users/$uid/photo").setValue(uri.toString())
+                            .addOnCompleteListener { task ->
+                                if (task.isSuccessful) {
+                                    Log.d(TAG, "onActivityResult: photo saved successfully")
+                                } else {
+                                    showToast(task.exception!!.message!!)
+                                }
+                            }
                     }
-                }else{
+                } else {
                     showToast(it.exception!!.message!!)
                 }
             }
