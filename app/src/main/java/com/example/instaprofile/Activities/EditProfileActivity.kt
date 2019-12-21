@@ -1,18 +1,15 @@
 package com.example.instaprofile.Activities
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.os.Environment
-import android.provider.MediaStore
 import android.util.Log
 import android.widget.TextView
-import androidx.core.content.FileProvider
 import com.example.instaprofile.R
 import com.example.instaprofile.model.User
+import com.example.instaprofile.util.CameraHelper
 import com.example.instaprofile.views.PasswordDialog
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.EmailAuthProvider
@@ -21,10 +18,9 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.database.*
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
+import com.google.firebase.storage.UploadTask
 import kotlinx.android.synthetic.main.activity_edit_profile.*
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.*
+
 
 class EditProfileActivity : AppCompatActivity(), PasswordDialog.Listener {
     private val TAG = "EditProfileActivity"
@@ -33,20 +29,18 @@ class EditProfileActivity : AppCompatActivity(), PasswordDialog.Listener {
     private lateinit var mAuth: FirebaseAuth
     private lateinit var mDatabase: DatabaseReference
     private lateinit var mStorage: StorageReference
-    private lateinit var mImageUrl: Uri
-
-    val simpleDateFormat = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
-
-    private val TAKE_PICTURE_REQUEST_CODE = 1
+    private lateinit var cameraHelper: CameraHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_edit_profile)
         Log.d(TAG, "onCreate")
 
+        cameraHelper = CameraHelper(this)
+
         close_image.setOnClickListener { finish() }
         save_image.setOnClickListener { updateProfile() }
-        change_photo_text.setOnClickListener { takeCameraPicture() }
+        change_photo_text.setOnClickListener { cameraHelper.takeCameraPicture() }
 
         mAuth = FirebaseAuth.getInstance()
         mDatabase = FirebaseDatabase.getInstance().reference
@@ -61,51 +55,62 @@ class EditProfileActivity : AppCompatActivity(), PasswordDialog.Listener {
                 website_input.setText(mUser.website, TextView.BufferType.EDITABLE)
                 bio_input.setText(mUser.bio, TextView.BufferType.EDITABLE)
                 email_input.setText(mUser.email, TextView.BufferType.EDITABLE)
-                phone_input.setText(mUser.phone.toString(), TextView.BufferType.EDITABLE)
-
+                phone_input.setText(mUser.phone?.toString(), TextView.BufferType.EDITABLE)
+                profile_image.loadUserPhoto(mUser.photo)
             })
     }
 
-    private fun takeCameraPicture() {
-        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        if (intent.resolveActivity(packageManager) != null) {
-            val imageFile = createImageFile()
-            mImageUrl =
-                FileProvider.getUriForFile(this, "com.example.instaprofile.fileprovider", imageFile)
-            intent.putExtra(MediaStore.EXTRA_OUTPUT, mImageUrl)
-            startActivityForResult(intent, TAKE_PICTURE_REQUEST_CODE)
-        }
-    }
-
-    private fun createImageFile(): File {
-        val storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES)
-        return File.createTempFile(
-            "JPEG_${simpleDateFormat.format(Date())}_",
-            ".jpg",
-            storageDir
-        )
-    }
 
     @SuppressLint("MissingSuperCall")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if (requestCode == TAKE_PICTURE_REQUEST_CODE && resultCode == RESULT_OK) {
+        if (requestCode == cameraHelper.REQUEST_CODE && resultCode == RESULT_OK) {
             val uid = mAuth.currentUser!!.uid
-            mStorage.child("users/$uid/photo").putFile(mImageUrl).addOnCompleteListener {
-                if (it.isSuccessful) {
-                    val downloadTask = it.result!!.metadata!!.reference!!.downloadUrl
-                    downloadTask.addOnSuccessListener { uri ->
-                        mDatabase.child("users/$uid/photo").setValue(uri.toString())
-                            .addOnCompleteListener { task ->
-                                if (task.isSuccessful) {
-                                    Log.d(TAG, "onActivityResult: photo saved successfully")
-                                } else {
-                                    showToast(task.exception!!.message!!)
+            mStorage.child("users/$uid/photo").putFile(cameraHelper.imageUrl!!)
+                .addOnCompleteListener {
+                    if (it.isSuccessful) {
+                        val downloadTask = it.result!!.metadata!!.reference!!.downloadUrl
+                        downloadTask.addOnSuccessListener { uri ->
+                            mDatabase.child("users/$uid/photo").setValue(uri.toString())
+                                .addOnCompleteListener { task ->
+                                    if (task.isSuccessful) {
+                                        mUser = mUser.copy(photo = uri.toString())
+                                        profile_image.loadUserPhoto(mUser.photo)
+                                    } else {
+                                        showToast(task.exception!!.message!!)
+                                    }
                                 }
-                            }
+                        }
+                    } else {
+                        showToast(it.exception!!.message!!)
                     }
-                } else {
-                    showToast(it.exception!!.message!!)
                 }
+        }
+    }
+
+    private fun StorageReference.uploadUserPhoto(
+        uid: String,
+        photo: Uri,
+        onSuccess: (UploadTask.TaskSnapshot) -> Unit
+    ) {
+        child("users/$uid/photo").putFile(photo).addOnCompleteListener {
+            if (it.isSuccessful) {
+                onSuccess(it.result!!)
+            } else {
+                showToast(it.exception!!.message!!)
+            }
+        }
+    }
+
+    private fun DatabaseReference.updateUserPhoto(
+        uid: String,
+        photoUri: String,
+        onSuccess: () -> Unit
+    ) {
+        child("users/$uid/photo").setValue(photoUri).addOnCompleteListener {
+            if (it.isSuccessful) {
+                onSuccess()
+            } else {
+                showToast(it.exception!!.message!!)
             }
         }
     }
@@ -125,16 +130,16 @@ class EditProfileActivity : AppCompatActivity(), PasswordDialog.Listener {
     }
 
     private fun readInputs(): User {
-        val phoneStr = phone_input.text.toString()
         return User(
             name = name_input.text.toString(),
             username = username_input.text.toString(),
-            website = website_input.text.toString(),
-            bio = bio_input.text.toString(),
             email = email_input.text.toString(),
-            phone = if (phoneStr.isEmpty()) 0 else phoneStr.toLong()
+            website = website_input.text.toStringOrNull(),
+            bio = bio_input.text.toStringOrNull(),
+            phone = phone_input.text.toString().toLongOrNull()
         )
     }
+
 
     override fun onPasswordConfirm(password: String) {
         if (password.isNotEmpty()) {
@@ -172,7 +177,7 @@ class EditProfileActivity : AppCompatActivity(), PasswordDialog.Listener {
     }
 
     private fun updateUser(user: User) {
-        val updatesMap = mutableMapOf<String, Any>()
+        val updatesMap = mutableMapOf<String, Any?>()
         if (user.name != mUser.name) updatesMap["name"] = user.name
         if (user.username != mUser.username) updatesMap["username"] = user.username
         if (user.website != mUser.website) updatesMap["website"] = user.website
@@ -188,10 +193,10 @@ class EditProfileActivity : AppCompatActivity(), PasswordDialog.Listener {
 
     private fun DatabaseReference.updateUser(
         uid: String,
-        updates: Map<String, Any>,
+        updates: Map<String, Any?>,
         onSuccess: () -> Unit
     ) {
-        child("users").child(mAuth.currentUser!!.uid).updateChildren(updates)
+        child("users").child(uid).updateChildren(updates)
             .addOnCompleteListener {
                 if (it.isSuccessful) {
                     onSuccess()

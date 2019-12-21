@@ -31,6 +31,11 @@
         <item name="android:padding">10dp</item>
     </style>
 
+    <style name="toolbar_text" parent="toolbar_title">
+        <item name="android:textColor">@color/blue</item>
+        <item name="android:gravity">center_vertical</item>
+    </style>
+
     <style name="toolbar_title">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">match_parent</item>
